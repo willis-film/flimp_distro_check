@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flimp Distribution Matcher</title>
+<style>
+  :root {
+    --bg: #f0f4f0;
+    --surface: #ffffff;
+    --surface2: #e8eee8;
+    --border: #d0d8d0;
+    --border2: #b8c8b8;
+    --text: #08212D;
+    --text-dim: #3a5a6a;
+    --text-dimmer: #7a9aaa;
+    --accent: #67E74E;
+    --accent-dim: #4ab838;
+    --warn: #f0a050;
+    --danger: #e05555;
+    --success: #1D9E75;
+    --tag-bg: #e4ece4;
+    --navy: #08212D;
+    --navy-light: rgba(8,33,45,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Calibri, sans-serif;
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── Layout ── */
+  .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  .header {
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: var(--navy);
+    flex-shrink: 0;
+  }
+
+  .header-logo {
+    font-family: Calibri, sans-serif;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+  }
+
+  .header-logo span { color: var(--accent); }
+
+  .header-tabs {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    padding: 3px;
+  }
+
+  .tab {
+    padding: 6px 16px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    font-family: Calibri, sans-serif;
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    color: var(--navy);
+    font-weight: 500;
+  }
+
+  .tab:not(.active):hover { color: #ffffff; }
+
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Config Panel ── */
+  .config-panel {
+    width: 280px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    background: var(--navy);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .config-section {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .config-label {
+    font-family: Calibri, sans-serif;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .config-field { margin-bottom: 12px; }
+
+  .config-field label {
+    display: block;
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 5px;
+  }
+
+  .config-field input, .config-field select {
+    width: 100%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 5px;
+    padding: 8px 10px;
+    color: #ffffff;
+    font-family: Calibri, sans-serif;
+    font-size: 11px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .config-field input:focus, .config-field select:focus {
+    border-color: var(--accent);
+  }
+
+  .config-field input[type="password"] { letter-spacing: 2px; }
+
+  .config-field select option { background: var(--navy); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-family: Calibri, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    transition: all 0.15s;
+    font-weight: 500;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--navy);
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-primary:hover { background: #d4f55a; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  .btn-ghost:hover { color: #ffffff; border-color: rgba(255,255,255,0.4); }
+
+  .btn-confirm {
+    background: var(--accent);
+    color: var(--navy);
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+
+  .btn-confirm:hover { background: var(--accent-dim); }
+  .btn-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-reject {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text-dim);
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+
+  .btn-reject:hover { border-color: var(--danger); color: var(--danger); }
+
+  .btn-sm { padding: 5px 10px; font-size: 10px; }
+
+  /* ── Content Area ── */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Status Bar ── */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--navy);
+    border: 1px solid var(--navy);
+    border-radius: 6px;
+    font-family: Calibri, sans-serif;
+    font-size: 11px;
+    color: rgba(255,255,255,0.7);
+    flex-shrink: 0;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-dimmer);
+    flex-shrink: 0;
+  }
+
+  .status-dot.active { background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: pulse 2s infinite; }
+  .status-dot.warn { background: var(--warn); }
+  .status-dot.success { background: var(--success); }
+  .status-dot.error { background: var(--danger); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ── Email Cards ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .section-title {
+    font-family: Calibri, sans-serif;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+  }
+
+  .count-badge {
+    font-family: Calibri, sans-serif;
+    font-size: 10px;
+    background: var(--tag-bg);
+    border: 1px solid var(--border2);
+    color: var(--text-dim);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .email-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+    box-shadow: 0 1px 3px rgba(8,33,45,0.08);
+  }
+
+  .email-card:hover { border-color: var(--border2); }
+
+  .email-card-header {
+    padding: 14px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .email-meta { flex: 1; min-width: 0; }
+
+  .email-client {
+    font-family: Calibri, sans-serif;
+    font-size: 17px;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    margin-bottom: 3px;
+  }
+
+  .email-subject {
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 6px;
+  }
+
+  .email-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .tag {
+    font-family: Calibri, sans-serif;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--tag-bg);
+    border: 1px solid var(--border2);
+    color: var(--text-dim);
+  }
+
+  .tag.video { border-color: #3a6a3a; color: #6ab86a; }
+  .tag.print { border-color: #5a4a2a; color: #c8902a; }
+  .tag.multi { border-color: #2a3a5a; color: #4a7acc; }
+
+  .email-date {
+    font-family: Calibri, sans-serif;
+    font-size: 11px;
+    color: var(--text-dimmer);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .chevron {
+    color: var(--text-dimmer);
+    font-size: 12px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .email-card.expanded .chevron { transform: rotate(90deg); }
+
+  /* ── Match Items ── */
+  .match-items {
+    border-top: 1px solid var(--border);
+    display: none;
+  }
+
+  .email-card.expanded .match-items { display: block; }
+
+  .match-item {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .match-item:last-child { border-bottom: none; }
+
+  .match-item-left { min-width: 0; }
+
+  .item-name {
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 4px;
+    font-weight: 400;
+  }
+
+  .item-url {
+    font-family: Calibri, sans-serif;
+    font-size: 10px;
+    color: var(--text-dimmer);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .match-candidates { min-width: 0; }
+
+  .candidate {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    margin-bottom: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .candidate:last-child { margin-bottom: 0; }
+  .candidate:hover { border-color: var(--accent-dim); }
+  .candidate.selected { border-color: var(--accent); background: #e8f8e4; }
+  .candidate.confirmed { border-color: var(--success); background: #e0f5ee; }
+
+  .confidence-bar {
+    width: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    align-self: stretch;
+    min-height: 24px;
+  }
+
+  .candidate-name {
+    font-size: 12px;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .confidence-pct {
+    font-family: Calibri, sans-serif;
+    font-size: 10px;
+    color: var(--text-dimmer);
+    flex-shrink: 0;
+  }
+
+  .no-match {
+    font-size: 12px;
+    color: var(--text-dimmer);
+    font-style: italic;
+    padding: 8px 0;
+  }
+
+  .match-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+
+  .confirmed-badge {
+    font-family: Calibri, sans-serif;
+    font-size: 10px;
+    color: var(--success);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* ── Gap Report (Page 2) ── */
+  .gap-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .gap-table-header {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr 1fr 120px;
+    padding: 10px 18px;
+    background: var(--navy);
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+
+  .gap-col-header {
+    font-family: Calibri, sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .gap-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr 1fr 120px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    align-items: center;
+    transition: background 0.1s;
+  }
+
+  .gap-row:last-child { border-bottom: none; }
+  .gap-row:hover { background: var(--surface2); }
+
+  .gap-task-name {
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gap-client {
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gap-status {
+    font-family: Calibri, sans-serif;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--tag-bg);
+    border: 1px solid var(--border2);
+    color: var(--warn);
+    border-color: #5a4020;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gap-date {
+    font-family: Calibri, sans-serif;
+    font-size: 11px;
+    color: var(--text-dimmer);
+  }
+
+  .gap-input {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 5px 8px;
+    color: var(--text);
+    font-family: Calibri, sans-serif;
+    font-size: 11px;
+    width: 100%;
+    outline: none;
+  }
+
+  .gap-input:focus { border-color: var(--accent); }
+
+  /* ── Empty / Loading States ── */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-dimmer);
+    text-align: center;
+    gap: 12px;
+  }
+
+  .empty-icon { font-size: 32px; opacity: 0.4; }
+
+  .empty-title {
+    font-family: Calibri, sans-serif;
+    font-size: 18px;
+    color: var(--text-dim);
+  }
+
+  .empty-sub { font-size: 12px; line-height: 1.6; max-width: 300px; }
+
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Manual date override ── */
+  .date-override {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .date-override label { font-size: 11px; color: var(--text-dimmer); }
+
+  .date-override input {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: var(--text);
+    font-family: Calibri, sans-serif;
+    font-size: 11px;
+    outline: none;
+    width: 130px;
+  }
+
+  .date-override input:focus { border-color: var(--accent); }
+
+  /* ── Toast ── */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1000;
+  }
+
+  .toast {
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-family: Calibri, sans-serif;
+    font-size: 11px;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    animation: slideIn 0.2s ease;
+    max-width: 320px;
+  }
+
+  .toast.success { border-color: var(--success); color: var(--success); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+  .toast.warn { border-color: var(--warn); color: var(--warn); }
+
+  @keyframes slideIn {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .divider { height: 1px; background: var(--border); margin: 4px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">Flimp <span>·</span> Distribution Matcher</div>
+    <div class="header-tabs">
+      <button class="tab active" id="tab-matcher" onclick="switchTab('matcher')">Email Matcher</button>
+      <button class="tab" id="tab-gaps" onclick="switchTab('gaps')">Gap Report</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Config Panel -->
+    <div class="config-panel">
+      <div class="config-section">
+        <div class="config-label">Anthropic</div>
+        <div class="config-field">
+          <label>API Key</label>
+          <input type="password" id="anthropic-key" placeholder="sk-ant-…" />
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-label">Gmail</div>
+        <div class="config-field" style="font-size:11px;color:var(--text-dimmer);line-height:1.6;padding-bottom:4px;">
+          Queries: <strong style="color:var(--text-dim)">cc:<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="10747963646279726564797f7e50767c797d603e7e7564">[email&#160;protected]</a></strong> + <strong style="color:var(--text-dim)">subject:"Distribution Toolkit"</strong> — deduplicated by message ID.
+        </div>
+        <div class="config-field">
+          <label>Max Emails</label>
+          <select id="gmail-max">
+            <option value="10">10 emails</option>
+            <option value="25" selected>25 emails</option>
+            <option value="50">50 emails</option>
+          </select>
+        </div>
+        <div class="config-field">
+          <label>Lookback</label>
+          <select id="gmail-lookback">
+            <option value="1">Last 24 hours</option>
+            <option value="7" selected>Last 7 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="30">Last 30 days</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-label">ClickUp</div>
+        <div class="config-field">
+          <label>API Key</label>
+          <input type="password" id="clickup-key" placeholder="pk_…" />
+        </div>
+        <div class="config-field">
+          <label>Team / Workspace ID</label>
+          <input type="text" id="clickup-team" placeholder="12345678" />
+        </div>
+        <div class="config-field">
+          <label>Dist. Date Field Name</label>
+          <input type="text" id="clickup-field" placeholder="Distribution Date" value="Distribution Date" />
+        </div>
+        <div class="config-field">
+          <label>Task Lookback (days)</label>
+          <select id="clickup-lookback">
+            <option value="30">30 days</option>
+            <option value="60" selected>60 days</option>
+            <option value="90">90 days</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-label">Gap Report Statuses</div>
+        <div class="config-field">
+          <label>Trigger Statuses (comma-sep)</label>
+          <input type="text" id="gap-statuses" placeholder="Complete, Distributed, Delivered" />
+        </div>
+      </div>
+
+      <div class="config-section">
+        <button class="btn btn-primary" id="run-btn" onclick="runMatcher()">
+          <span>▶</span> Fetch &amp; Match
+        </button>
+        <div style="height:8px"></div>
+        <button class="btn btn-ghost" id="gap-btn" style="width:100%;justify-content:center" onclick="runGapReport()">
+          Load Gap Report
+        </button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content" id="content">
+      <div class="empty-state">
+        <div class="empty-icon">◈</div>
+        <div class="empty-title">Ready to match</div>
+        <div class="empty-sub">Configure your API keys and Gmail query, then hit Fetch &amp; Match to pull recent distribution emails and match them to ClickUp tasks.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+/**
+ * Flimp Distribution Matcher — Script
+ * ─────────────────────────────────────────────────────────────────────────
+ * PURPOSE
+ *   Match outbound distribution emails to ClickUp tasks and record the
+ *   distribution date. Every match requires explicit human approval.
+ *
+ * ARCHITECTURE (prototype / validation build)
+ *   Gmail fetch   → Claude API + Gmail MCP
+ *   Email parse   → Claude API → { client, format, items[] }
+ *   Task fetch    → ClickUp REST API → flat task list
+ *   Matching      → Claude API → ranked candidates per line item
+ *   Confirmation  → human approves in UI
+ *   Logging       → sessionStorage (stub for Vercel KV in production)
+ *
+ * !! NO CLICKUP WRITES IN THIS BUILD !!
+ *   Confirmed matches are logged to sessionStorage only.
+ *   Inspect via: JSON.parse(sessionStorage.getItem('dist_match_log'))
+ *
+ * VERCEL MIGRATION CHECKLIST
+ *   [ ] Move API keys to Vercel env vars (ANTHROPIC_API_KEY, CLICKUP_API_KEY, CLICKUP_TEAM_ID)
+ *   [ ] fetchGmailEmails()      → POST /api/gmail  (direct Gmail API + Google OAuth)
+ *   [ ] parseEmailsWithClaude() → POST /api/parse
+ *   [ ] fetchClickUpTasks()     → POST /api/tasks
+ *   [ ] matchAllEmails()        → POST /api/match
+ *   [ ] logConfirmedMatch()     → POST /api/log    (writes to Vercel KV)
+ *   [ ] logGapDate()            → POST /api/log
+ *   [ ] Add ClickUp PUT in confirmMatch() ONLY after workflow validated
+ *
+ * EMAIL FORMAT NOTES
+ *   Video: items from ">> Distribution Options / Option 1" — name + flimp.live URL.
+ *          Option 1 is canonical (more granular than Reporting block for EN/ES splits).
+ *   Print: single item from lede sentence "Your X is ready to be distributed."
+ *   Body truncated at "Option 2:" before parse to cut boilerplate (~60% token reduction).
+ *
+ * GMAIL QUERIES (dual, deduplicated by message ID)
+ *   1. cc:distribution@flimp.net
+ *   2. subject:"Distribution Toolkit"  ← BCC fallback
+ *   When distribution@flimp.net inbox is confirmed accessible, consolidate to one pull.
+ *
+ * KV LOG SCHEMA
+ *   { gmail_id, task_id, client, item_name, dist_date, confirmed_at, source }
+ *   Dual-indexed by gmail:{gmail_id} and task:{task_id} for fast lookup in both directions.
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+
+// ─────────────────────────────────────────────
+// STATE
+// Never mutate directly from render functions.
+// All writes go through action functions.
+// ─────────────────────────────────────────────
+let state = {
+  activeTab:    'matcher',
+  emails:       [],   // { id, subject, date, from, client, format, items[], parseError? }
+  tasks:        [],   // { id, name, status, date_updated, custom_fields[], list, space }
+  matches:      {},   // emailId -> { itemIndex -> { candidates[], selected, confirmed, date } }
+  taskFieldMap: {},   // taskId -> custom field ID for distribution date
+  keys:         {},   // { anthropicKey, clickupKey, clickupTeam } — captured once at run time
+};
+
+// ─────────────────────────────────────────────
+// TAB SWITCHING
+// ─────────────────────────────────────────────
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'matcher') || (i === 1 && tab === 'gaps'));
+  });
+  if (tab === 'gaps') renderGapReport();
+  else renderEmails();
+}
+
+// ─────────────────────────────────────────────
+// TOAST NOTIFICATIONS
+// ─────────────────────────────────────────────
+function toast(msg, type = 'info', duration = 3500) {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ─────────────────────────────────────────────
+// MAIN ORCHESTRATOR
+// Runs full pipeline: Gmail → parse → ClickUp → match → render
+// ─────────────────────────────────────────────
+async function runMatcher() {
+  const anthropicKey = document.getElementById('anthropic-key').value.trim();
+  const clickupKey   = document.getElementById('clickup-key').value.trim();
+  const clickupTeam  = document.getElementById('clickup-team').value.trim();
+
+  if (!anthropicKey)               return toast('Anthropic API key required', 'error');
+  if (!clickupKey || !clickupTeam) return toast('ClickUp API key and Team ID required', 'error');
+
+  // Keys captured once — action functions read from state.keys, never from DOM.
+  // Clearing the config fields mid-session cannot trigger writes with wrong credentials.
+  state.keys = { anthropicKey, clickupKey, clickupTeam };
+
+  try {
+    setStatus('active', 'Fetching Gmail distribution emails...');
+    renderLoading('Pulling emails from Gmail...');
+    const rawEmails = await fetchGmailEmails(anthropicKey);
+    if (!rawEmails.length) {
+      setStatus('warn', 'No emails found');
+      renderEmpty('No distribution emails found', 'Try adjusting the lookback window or confirm the Gmail MCP is connected.');
+      return;
+    }
+
+    setStatus('active', `Parsing ${rawEmails.length} email${rawEmails.length !== 1 ? 's' : ''}...`);
+    renderLoading(`Parsing ${rawEmails.length} email${rawEmails.length !== 1 ? 's' : ''} with Claude...`);
+    state.emails = await parseEmailsWithClaude(anthropicKey, rawEmails);
+
+    setStatus('active', 'Fetching ClickUp tasks...');
+    renderLoading('Pulling ClickUp tasks...');
+    state.tasks = await fetchClickUpTasks(clickupKey, clickupTeam);
+
+    setStatus('active', 'Running semantic match...');
+    renderLoading('Matching items to tasks...');
+    await matchAllEmails(anthropicKey);
+
+    const parseErrors = state.emails.filter(e => e.parseError).length;
+    const warnSuffix  = parseErrors ? ` · ${parseErrors} parse error${parseErrors !== 1 ? 's' : ''}` : '';
+    setStatus(parseErrors ? 'warn' : 'success',
+      `${state.emails.length} emails · ${state.tasks.length} tasks loaded${warnSuffix}`);
+    renderEmails();
+
+  } catch (err) {
+    console.error('[runMatcher]', err);
+    setStatus('error', 'Error: ' + err.message);
+    toast('Error: ' + err.message, 'error', 6000);
+    renderEmpty('Something went wrong', err.message);
+  }
+}
+
+// ─────────────────────────────────────────────
+// STEP 1: Gmail fetch via Claude + Gmail MCP
+// TODO (Vercel): replace with POST /api/gmail using direct Gmail API + OAuth
+// ─────────────────────────────────────────────
+async function fetchGmailEmails(apiKey) {
+  const days    = parseInt(document.getElementById('gmail-lookback').value) || 7;
+  const maxMsgs = parseInt(document.getElementById('gmail-max').value) || 25;
+  const after   = Math.floor((Date.now() - days * 86400000) / 1000);
+
+  const queries = [
+    `cc:distribution@flimp.net after:${after}`,
+    `subject:"Distribution Toolkit" after:${after}`,
+  ];
+
+  const systemPrompt = `You are a Gmail assistant. Search for emails matching the query and return a JSON array of email objects. Each object must have: id (string), subject (string), date (ISO string), from (string), body (string - full plain text body). Return ONLY a valid JSON array. No markdown, no commentary.`;
+
+  const allResults = [];
+  const seenIds    = new Set();
+
+  for (const query of queries) {
+    let resp;
+    try {
+      resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type':      'application/json',
+          'x-api-key':         apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-beta':    'mcp-client-2025-04-04',
+        },
+        body: JSON.stringify({
+          model:       'claude-sonnet-4-20250514',
+          max_tokens:  4000,
+          system:      systemPrompt,
+          messages:    [{ role: 'user', content: `Search Gmail for: "${query}". Return at most ${maxMsgs} results, newest first. Include full email body text.` }],
+          mcp_servers: [{ type: 'url', url: 'https://gmail.mcp.claude.com/mcp', name: 'gmail' }],
+        }),
+      });
+    } catch (networkErr) {
+      console.warn('[fetchGmailEmails] Network error for query:', query, networkErr);
+      continue;
+    }
+
+    if (!resp.ok) {
+      console.warn(`[fetchGmailEmails] API error (${resp.status}) for query:`, query);
+      continue;
+    }
+
+    const data       = await resp.json();
+    const textBlocks = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    try {
+      const arr = JSON.parse(textBlocks.replace(/```json|```/g, '').trim());
+      if (Array.isArray(arr)) {
+        arr.forEach(email => {
+          if (!seenIds.has(email.id)) {
+            seenIds.add(email.id);
+            allResults.push(email);
+          }
+        });
+      }
+    } catch {
+      console.warn('[fetchGmailEmails] JSON parse failed for query:', query, textBlocks.slice(0, 300));
+    }
+  }
+
+  allResults.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return allResults.slice(0, maxMsgs);
+}
+
+// ─────────────────────────────────────────────
+// STEP 2: Parse emails with Claude
+// TODO (Vercel): replace with POST /api/parse
+// ─────────────────────────────────────────────
+async function parseEmailsWithClaude(apiKey, rawEmails) {
+  const results = [];
+
+  for (const email of rawEmails) {
+    let resp;
+    try {
+      resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type':      'application/json',
+          'x-api-key':         apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model:      'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: `You extract structured data from Flimp distribution emails. Return ONLY a JSON object with no markdown.
+
+Schema:
+{
+  "client": string,           // client/company name from subject line
+  "format": "video"|"print",  // video = has Flimp URLs; print = file download only
+  "items": [
+    {
+      "name": string,          // project/deliverable name
+      "flimp_url": string|null // flimp.live URL for this item; null if print format
+    }
+  ]
+}
+
+Video emails: extract items from ">> Distribution Options / Option 1" block — name paired with its https://flimp.live/ URL. Ignore -EM iframe variants. Option 1 is authoritative (more granular than Reporting block for EN/ES splits).
+Print emails: single item from the opening sentence "Your X is ready to be distributed."
+Client name always comes from the email subject line.`,
+          messages: [{
+            role:    'user',
+            content: `Subject: ${email.subject}\n\nBody:\n${truncateEmailBody(email.body)}`,
+          }],
+        }),
+      });
+    } catch (networkErr) {
+      console.warn('[parseEmailsWithClaude] Network error for:', email.subject, networkErr);
+      results.push(makeParseErrorEntry(email));
+      continue;
+    }
+
+    if (!resp.ok) {
+      console.warn('[parseEmailsWithClaude] API error', resp.status, 'for:', email.subject);
+      results.push(makeParseErrorEntry(email));
+      continue;
+    }
+
+    const data = await resp.json();
+    const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    try {
+      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+      results.push({ ...parsed, id: email.id, subject: email.subject, date: email.date, from: email.from });
+    } catch {
+      console.warn('[parseEmailsWithClaude] JSON parse failed for:', email.subject, text.slice(0, 200));
+      results.push(makeParseErrorEntry(email));
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Placeholder for emails that fail to parse.
+ * Surfaces as a "parse error" card in the UI rather than silently disappearing.
+ */
+function makeParseErrorEntry(email) {
+  return {
+    id:         email.id,
+    subject:    email.subject,
+    date:       email.date,
+    from:       email.from,
+    client:     email.subject || 'Unknown',
+    format:     'unknown',
+    items:      [],
+    parseError: true,
+  };
+}
+
+// ─────────────────────────────────────────────
+// STEP 3: ClickUp task fetch
+// Full hierarchy walk: Team -> Spaces -> Folders/Lists -> Tasks
+// More reliable than ClickUp search endpoint for large workspaces.
+// TODO (Vercel): replace with POST /api/tasks
+// ─────────────────────────────────────────────
+async function fetchClickUpTasks(apiKey, teamId) {
+  const days  = parseInt(document.getElementById('clickup-lookback').value) || 60;
+  const since = Date.now() - days * 86400000;
+
+  const spacesResp = await fetch(
+    `https://api.clickup.com/api/v2/team/${teamId}/space?archived=false`,
+    { headers: { Authorization: apiKey } }
+  );
+  if (!spacesResp.ok) throw new Error(`ClickUp spaces fetch failed: ${spacesResp.status}`);
+  const { spaces = [] } = await spacesResp.json();
+
+  let allTasks = [];
+
+  for (const space of spaces) {
+    // Fetch folders and folderless lists in parallel
+    const [foldersData, spaceListsData] = await Promise.all([
+      fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder?archived=false`, { headers: { Authorization: apiKey } }).then(r => r.json()),
+      fetch(`https://api.clickup.com/api/v2/space/${space.id}/list?archived=false`,   { headers: { Authorization: apiKey } }).then(r => r.json()),
+    ]);
+
+    const folders    = foldersData.folders   || [];
+    const spaceLists = spaceListsData.lists  || [];
+
+    // Fetch all folder-contained lists in parallel
+    const folderListResults = await Promise.all(
+      folders.map(f =>
+        fetch(`https://api.clickup.com/api/v2/folder/${f.id}/list?archived=false`, { headers: { Authorization: apiKey } })
+          .then(r => r.json())
+          .then(d => d.lists || [])
+          .catch(() => [])
+      )
+    );
+
+    const allLists = [...spaceLists, ...folderListResults.flat()];
+
+    // Paginate tasks per list — MAX_PAGES cap prevents infinite loops on API errors
+    const MAX_PAGES = 20;
+    for (const list of allLists) {
+      let page = 0;
+      while (page < MAX_PAGES) {
+        const taskResp = await fetch(
+          `https://api.clickup.com/api/v2/list/${list.id}/task?archived=false&include_closed=true&date_updated_gt=${since}&page=${page}&subtasks=true`,
+          { headers: { Authorization: apiKey } }
+        );
+        if (!taskResp.ok) break;
+        const { tasks = [] } = await taskResp.json();
+        allTasks = allTasks.concat(tasks.map(t => ({
+          id:            t.id,
+          name:          t.name,
+          status:        t.status?.status || '',
+          date_updated:  t.date_updated,
+          custom_fields: t.custom_fields || [],
+          list:          list.name,
+          space:         space.name,
+        })));
+        if (tasks.length < 100) break;
+        page++;
+      }
+    }
+  }
+
+  // Pre-index distribution date field IDs so confirm actions don't need to scan
+  const fieldName = document.getElementById('clickup-field').value.trim().toLowerCase();
+  state.taskFieldMap = {};
+  allTasks.forEach(task => {
+    const field = task.custom_fields.find(f => f.name.toLowerCase() === fieldName);
+    if (field) state.taskFieldMap[task.id] = field.id;
+  });
+
+  return allTasks;
+}
+
+// ─────────────────────────────────────────────
+// STEP 4: Semantic matching via Claude
+// Two-stage: token filter by client name -> Claude semantic rank within that subset
+// TODO (Vercel): replace with POST /api/match
+// ─────────────────────────────────────────────
+async function matchAllEmails(apiKey) {
+  state.matches = {};
+
+  for (const email of state.emails) {
+    state.matches[email.id] = {};
+    if (email.parseError || !email.items?.length) continue;
+
+    // Stage 1: token overlap to narrow ~800 tasks to the relevant client subset
+    const clientTokens = tokenize(email.client);
+    const clientTasks  = state.tasks.filter(task => {
+      const taskTokens = tokenize(task.name);
+      return clientTokens.some(ct => taskTokens.some(tt => tt.includes(ct) || ct.includes(tt)));
+    });
+
+    if (!clientTasks.length) {
+      console.warn('[matchAllEmails] No client tasks found for:', email.client);
+      continue;
+    }
+
+    // Stage 2: Claude semantic ranking within client subset
+    let resp;
+    try {
+      resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type':      'application/json',
+          'x-api-key':         apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model:      'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: `You are a project name matcher. Given deliverable names from a distribution email and a list of ClickUp task names, return a JSON array of match results. Return ONLY valid JSON, no markdown.
+
+Schema:
+[
+  {
+    "item_index": number,
+    "candidates": [
+      { "task_id": string, "task_name": string, "confidence": number }
+    ]
+  }
+]
+
+Return up to 3 candidates per item, ranked by confidence (0-100).
+Consider: partial name matches, abbreviations, year differences, EN/ES language variants.
+Be conservative: score 90+ only if the match is nearly certain.`,
+          messages: [{
+            role:    'user',
+            content: `Distribution email items:\n${email.items.map((it, i) => `${i}: ${it.name}`).join('\n')}\n\nClickUp tasks:\n${clientTasks.map(t => `${t.id}: ${t.name}`).join('\n')}`,
+          }],
+        }),
+      });
+    } catch (networkErr) {
+      console.warn('[matchAllEmails] Network error for:', email.client, networkErr);
+      continue;
+    }
+
+    if (!resp.ok) {
+      console.warn('[matchAllEmails] API error', resp.status, 'for:', email.client);
+      continue;
+    }
+
+    const data = await resp.json();
+    const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    try {
+      const results = JSON.parse(text.replace(/```json|```/g, '').trim());
+      results.forEach(r => {
+        state.matches[email.id][r.item_index] = {
+          candidates: r.candidates || [],
+          selected:   r.candidates?.[0]?.task_id || null,
+          confirmed:  false,
+          date:       new Date(email.date).toISOString().split('T')[0],
+        };
+      });
+    } catch {
+      console.warn('[matchAllEmails] JSON parse failed for:', email.client, text.slice(0, 200));
+    }
+  }
+}
+
+// ─────────────────────────────────────────────
+// RENDER: Email Matcher tab
+// ─────────────────────────────────────────────
+function renderEmails() {
+  const el = document.getElementById('content');
+  if (!state.emails.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-title">Ready to match</div><div class="empty-sub">Configure your API keys and click Fetch &amp; Match to begin.</div></div>`;
+    return;
+  }
+
+  const confirmed = Object.values(state.matches)
+    .reduce((acc, itemMap) => acc + Object.values(itemMap).filter(m => m.confirmed).length, 0);
+  const total = state.emails.reduce((acc, e) => acc + (e.items?.length || 0), 0);
+
+  el.innerHTML = `
+    <div class="status-bar">
+      <div class="status-dot success"></div>
+      <span>${state.emails.length} email${state.emails.length !== 1 ? 's' : ''} · ${total} items · ${confirmed} confirmed · ${state.tasks.length} tasks loaded</span>
+    </div>
+    <div class="section-header">
+      <span class="section-title">Distribution Emails</span>
+      <span class="count-badge">${state.emails.length}</span>
+    </div>
+    ${state.emails.map(email => renderEmailCard(email)).join('')}
+  `;
+}
+
+function renderEmailCard(email) {
+  const itemCount      = email.items?.length || 0;
+  const matchMap       = state.matches[email.id] || {};
+  const confirmedCount = Object.values(matchMap).filter(m => m.confirmed).length;
+  const dateStr        = email.date
+    ? new Date(email.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : '—';
+
+  return `
+    <div class="email-card" id="card-${sanitize(email.id)}">
+      <div class="email-card-header" onclick="toggleCard('${sanitize(email.id)}')">
+        <div class="email-meta">
+          <div class="email-client">${sanitize(email.client) || 'Unknown Client'}</div>
+          <div class="email-subject">${sanitize(email.subject) || ''}</div>
+          <div class="email-tags">
+            ${email.parseError
+              ? `<span class="tag" style="border-color:#c04040;color:#e05555">parse error</span>`
+              : `<span class="tag ${sanitize(email.format)}">${sanitize(email.format) || 'unknown'}</span>
+                 <span class="tag ${itemCount > 1 ? 'multi' : ''}">${itemCount} item${itemCount !== 1 ? 's' : ''}</span>
+                 ${confirmedCount > 0 ? `<span class="tag" style="border-color:#2a4a2a;color:var(--success)">${confirmedCount}/${itemCount} confirmed</span>` : ''}`
+            }
+          </div>
+        </div>
+        <div class="email-date">${dateStr}</div>
+        <div class="chevron">&#x203A;</div>
+      </div>
+      <div class="match-items">
+        ${(email.items || []).map((item, i) => renderMatchItem(email, item, i, matchMap[i])).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderMatchItem(email, item, index, match) {
+  const candidates = match?.candidates || [];
+  const selected   = match?.selected   || null;
+  const confirmed  = match?.confirmed  || false;
+  const date       = match?.date       || new Date(email.date).toISOString().split('T')[0];
+
+  const candidatesHtml = candidates.length
+    ? candidates.map(c => {
+        const color       = c.confidence >= 85 ? 'var(--success)' : c.confidence >= 60 ? 'var(--warn)' : 'var(--danger)';
+        const isSelected  = c.task_id === selected;
+        const isConfirmed = confirmed && isSelected;
+        return `
+          <div class="candidate ${isSelected ? 'selected' : ''} ${isConfirmed ? 'confirmed' : ''}"
+               onclick="selectCandidate('${sanitize(email.id)}', ${index}, '${sanitize(c.task_id)}')">
+            <div class="confidence-bar" style="background:${color}"></div>
+            <div class="candidate-name">${sanitize(c.task_name)}</div>
+            <div class="confidence-pct">${c.confidence}%</div>
+          </div>`;
+      }).join('')
+    : `<div class="no-match">No candidate tasks found</div>`;
+
+  const actionsHtml = confirmed
+    ? `<div class="confirmed-badge">&#x2713; Confirmed</div>`
+    : `<button class="btn btn-confirm" onclick="confirmMatch('${sanitize(email.id)}', ${index})" ${!selected ? 'disabled' : ''}>Confirm</button>
+       <button class="btn btn-reject"  onclick="rejectMatch('${sanitize(email.id)}', ${index})">Skip</button>`;
+
+  return `
+    <div class="match-item" id="match-${sanitize(email.id)}-${index}">
+      <div class="match-item-left">
+        <div class="item-name">${sanitize(item.name)}</div>
+        ${item.flimp_url ? `<div class="item-url">${sanitize(item.flimp_url)}</div>` : ''}
+        <div class="date-override">
+          <label>Date:</label>
+          <input type="date" value="${date}"
+            onchange="updateDate('${sanitize(email.id)}', ${index}, this.value)"
+            ${confirmed ? 'disabled' : ''} />
+        </div>
+      </div>
+      <div class="match-candidates">${candidatesHtml}</div>
+      <div class="match-actions">${actionsHtml}</div>
+    </div>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// RENDER: Gap Report tab
+// ─────────────────────────────────────────────
+
+/** Fetches tasks if not yet loaded, switches to gap tab, renders report. */
+async function runGapReport() {
+  const clickupKey  = document.getElementById('clickup-key').value.trim();
+  const clickupTeam = document.getElementById('clickup-team').value.trim();
+  if (!clickupKey || !clickupTeam) return toast('ClickUp credentials required', 'error');
+
+  switchTab('gaps');
+
+  if (!state.tasks.length) {
+    setStatus('active', 'Loading gap report...');
+    renderLoading('Fetching tasks for gap report...');
+    try {
+      state.tasks = await fetchClickUpTasks(clickupKey, clickupTeam);
+    } catch (err) {
+      console.error('[runGapReport]', err);
+      toast('ClickUp fetch failed: ' + err.message, 'error');
+      renderEmpty('ClickUp fetch failed', err.message);
+      return;
+    }
+  }
+
+  renderGapReport();
+  setStatus('success', 'Gap report loaded');
+}
+
+function renderGapReport() {
+  const el = document.getElementById('content');
+
+  if (!state.tasks.length) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&#x25C8;</div>
+        <div class="empty-title">No tasks loaded yet</div>
+        <div class="empty-sub">Enter your ClickUp credentials and click "Load Gap Report" to find tasks missing a distribution date.</div>
+      </div>`;
+    return;
+  }
+
+  const fieldName       = document.getElementById('clickup-field').value.trim().toLowerCase();
+  const statusInput     = document.getElementById('gap-statuses').value.trim();
+  const triggerStatuses = statusInput
+    ? statusInput.split(',').map(s => s.trim().toLowerCase())
+    : [];
+
+  const gapTasks = state.tasks.filter(task => {
+    const inTriggerStatus = triggerStatuses.length === 0 || triggerStatuses.includes(task.status.toLowerCase());
+    const distField       = task.custom_fields.find(f => f.name.toLowerCase() === fieldName);
+    const missingDate     = !distField || !distField.value;
+    return inTriggerStatus && missingDate;
+  });
+
+  if (!gapTasks.length) {
+    el.innerHTML = `
+      <div class="status-bar"><div class="status-dot success"></div><span>${state.tasks.length} tasks checked &middot; No gaps found</span></div>
+      <div class="empty-state">
+        <div class="empty-icon">&#x2713;</div>
+        <div class="empty-title">No gaps detected</div>
+        <div class="empty-sub">All tasks with the specified statuses have a distribution date recorded.</div>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="status-bar">
+      <div class="status-dot warn"></div>
+      <span>${gapTasks.length} task${gapTasks.length !== 1 ? 's' : ''} missing distribution date &middot; ${state.tasks.length} total checked</span>
+    </div>
+    <div class="section-header">
+      <span class="section-title">Missing Distribution Dates</span>
+      <span class="count-badge">${gapTasks.length}</span>
+    </div>
+    <div class="gap-table">
+      <div class="gap-table-header">
+        <span class="gap-col-header">Task Name</span>
+        <span class="gap-col-header">List</span>
+        <span class="gap-col-header">Status</span>
+        <span class="gap-col-header">Last Updated</span>
+        <span class="gap-col-header">Set Date</span>
+      </div>
+      ${gapTasks.map(task => {
+        const updated = task.date_updated
+          ? new Date(parseInt(task.date_updated)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : '&#x2014;';
+        return `
+          <div class="gap-row">
+            <div class="gap-task-name" title="${sanitize(task.name)}">${sanitize(task.name)}</div>
+            <div class="gap-client"    title="${sanitize(task.list)}">${sanitize(task.list)}</div>
+            <div class="gap-status">${sanitize(task.status)}</div>
+            <div class="gap-date">${updated}</div>
+            <input class="gap-input" type="date"
+              onchange="writeGapDate('${sanitize(task.id)}', this.value, this)" />
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ─────────────────────────────────────────────
+// USER ACTIONS
+// ─────────────────────────────────────────────
+function toggleCard(emailId) {
+  document.getElementById(`card-${emailId}`)?.classList.toggle('expanded');
+}
+
+function selectCandidate(emailId, itemIndex, taskId) {
+  if (!state.matches[emailId])            state.matches[emailId] = {};
+  if (!state.matches[emailId][itemIndex]) state.matches[emailId][itemIndex] = {};
+  if (state.matches[emailId][itemIndex].confirmed) return; // locked after confirm
+  state.matches[emailId][itemIndex].selected = taskId;
+  refreshMatchItem(emailId, itemIndex);
+}
+
+function updateDate(emailId, itemIndex, date) {
+  if (state.matches[emailId]?.[itemIndex]) {
+    state.matches[emailId][itemIndex].date = date;
+  }
+}
+
+function rejectMatch(emailId, itemIndex) {
+  if (!state.matches[emailId]) state.matches[emailId] = {};
+  state.matches[emailId][itemIndex] = {
+    ...state.matches[emailId][itemIndex],
+    selected:  null,
+    confirmed: false,
+  };
+  refreshMatchItem(emailId, itemIndex);
+}
+
+/**
+ * Confirms a match. Logs to sessionStorage only — NO ClickUp write.
+ * TODO (Vercel): POST confirmed entry to /api/log (Vercel KV).
+ * TODO (post-validation): add ClickUp PUT to write distribution date.
+ */
+function confirmMatch(emailId, itemIndex) {
+  const match = state.matches[emailId]?.[itemIndex];
+  if (!match?.selected) return toast('Select a task first', 'warn');
+
+  state.matches[emailId][itemIndex].confirmed = true;
+  logConfirmedMatch(emailId, itemIndex);
+  toast('Match confirmed &#x2713;', 'success');
+  refreshMatchItem(emailId, itemIndex);
+  updateCardBadge(emailId);
+}
+
+/**
+ * Records a gap report date. Logs to sessionStorage only — NO ClickUp write.
+ * TODO (Vercel): POST entry to /api/log (Vercel KV).
+ * TODO (post-validation): add ClickUp PUT to write distribution date.
+ */
+function writeGapDate(taskId, dateStr, inputEl) {
+  if (!dateStr) return;
+  inputEl.style.borderColor = 'var(--success)';
+  inputEl.disabled = true;
+  logGapDate(taskId, dateStr);
+  toast('Date noted \u2014 not yet written to ClickUp', 'warn');
+}
+
+// ─────────────────────────────────────────────
+// SURGICAL RE-RENDER HELPERS
+// ─────────────────────────────────────────────
+function refreshMatchItem(emailId, itemIndex) {
+  const email = state.emails.find(e => e.id === emailId);
+  if (!email) return;
+  const item  = email.items[itemIndex];
+  const match = state.matches[emailId][itemIndex];
+  const el    = document.getElementById(`match-${emailId}-${itemIndex}`);
+  if (!el) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = renderMatchItem(email, item, itemIndex, match);
+  el.replaceWith(tmp.firstElementChild);
+}
+
+function updateCardBadge(emailId) {
+  const email          = state.emails.find(e => e.id === emailId);
+  const matchMap       = state.matches[emailId] || {};
+  const confirmedCount = Object.values(matchMap).filter(m => m.confirmed).length;
+  const itemCount      = email?.items?.length || 0;
+  const badge          = document.querySelector(`#card-${emailId} .email-tags`);
+  if (!badge) return;
+  badge.querySelector('.confirmed-tag')?.remove();
+  if (confirmedCount > 0) {
+    const span       = document.createElement('span');
+    span.className   = 'tag confirmed-tag';
+    span.style       = 'border-color:#2a4a2a;color:var(--success)';
+    span.textContent = `${confirmedCount}/${itemCount} confirmed`;
+    badge.appendChild(span);
+  }
+}
+
+// ─────────────────────────────────────────────
+// UI HELPERS
+// ─────────────────────────────────────────────
+function setStatus(type, msg) {
+  const bar = document.querySelector('.status-bar');
+  if (!bar) return;
+  bar.querySelector('.status-dot').className = `status-dot ${type}`;
+  bar.querySelector('span').textContent = msg;
+}
+
+function renderLoading(msg) {
+  document.getElementById('content').innerHTML = `
+    <div class="empty-state">
+      <div class="spinner"></div>
+      <div class="empty-title">${sanitize(msg)}</div>
+    </div>`;
+}
+
+function renderEmpty(title, sub) {
+  document.getElementById('content').innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">&#x25CC;</div>
+      <div class="empty-title">${sanitize(title)}</div>
+      <div class="empty-sub">${sanitize(sub)}</div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────
+// KV LOG STUBS
+// In the Vercel build these become POST /api/log calls that write to Vercel KV.
+// For now, data lands in sessionStorage for inspection and debugging.
+// Inspect: JSON.parse(sessionStorage.getItem('dist_match_log'))
+// ─────────────────────────────────────────────
+function logConfirmedMatch(emailId, itemIndex) {
+  const email = state.emails.find(e => e.id === emailId);
+  const match = state.matches[emailId]?.[itemIndex];
+  const item  = email?.items?.[itemIndex];
+  if (!email || !match || !item) return;
+  appendToLog({
+    gmail_id:     email.id,
+    task_id:      match.selected,
+    client:       email.client,
+    item_name:    item.name,
+    dist_date:    match.date,
+    confirmed_at: new Date().toISOString(),
+    source:       'email_match',
+  });
+}
+
+function logGapDate(taskId, dateStr) {
+  appendToLog({
+    task_id:   taskId,
+    dist_date: dateStr,
+    logged_at: new Date().toISOString(),
+    source:    'gap_report',
+  });
+}
+
+function appendToLog(entry) {
+  try {
+    const log = JSON.parse(sessionStorage.getItem('dist_match_log') || '[]');
+    log.push(entry);
+    sessionStorage.setItem('dist_match_log', JSON.stringify(log));
+    console.info('[dist-matcher log]', entry);
+  } catch (e) {
+    console.warn('[appendToLog] sessionStorage write failed', e);
+  }
+}
+
+// ─────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────
+
+/** Escapes HTML special characters to prevent XSS via innerHTML. */
+function sanitize(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g,  '&amp;')
+    .replace(/</g,  '&lt;')
+    .replace(/>/g,  '&gt;')
+    .replace(/"/g,  '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+/**
+ * Strips everything from "Option 2:" onward — identical boilerplate in every
+ * distribution email that adds no parse value. Reduces Claude input tokens ~60-70%.
+ */
+function truncateEmailBody(body) {
+  if (!body) return '';
+  const cutMarkers = [
+    'Option 2: Distribute by email',
+    'Option 2:Distribute by email',
+    '>> Option 2',
+    'Distribute by email Copy and paste',
+  ];
+  let cut = body.length;
+  for (const marker of cutMarkers) {
+    const idx = body.indexOf(marker);
+    if (idx !== -1 && idx < cut) cut = idx;
+  }
+  return body.slice(0, cut).trim();
+}
+
+/**
+ * Tokenizes a string for client-name fuzzy matching.
+ * Strips punctuation, lowercases, filters tokens under 3 chars to avoid
+ * matching on stop words ("of", "the", "inc", etc.).
+ */
+function tokenize(str) {
+  return (str || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(t => t.length > 2);
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// window.* assignments expose action functions to inline event handlers.
+// Must appear after all function declarations above.
+// DOMContentLoaded wires the static config panel buttons.
+// ─────────────────────────────────────────────
+window.switchTab       = switchTab;
+window.runMatcher      = runMatcher;
+window.runGapReport    = runGapReport;
+window.toggleCard      = toggleCard;
+window.selectCandidate = selectCandidate;
+window.updateDate      = updateDate;
+window.rejectMatch     = rejectMatch;
+window.confirmMatch    = confirmMatch;
+window.writeGapDate    = writeGapDate;
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.getElementById('tab-matcher').addEventListener('click', function () { switchTab('matcher'); });
+  document.getElementById('tab-gaps').addEventListener('click',    function () { switchTab('gaps'); });
+  document.getElementById('run-btn').addEventListener('click',     runMatcher);
+  document.getElementById('gap-btn').addEventListener('click',     runGapReport);
+});
+</script>
+</body>
+</html>
